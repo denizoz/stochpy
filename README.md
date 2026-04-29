@@ -129,7 +129,7 @@ Prompts live in YAML, not source files. Code only holds a key.
 ```python
 @context(
     model  = registry.quality,
-    prompt = prompts.load("borusan.pl_graph.analyze"),
+    prompt = prompts.load("finance.pl_graph.analyze"),
     ...
 )
 def analyze_pl_graph(graph_json: str, intent: ParsedIntent) -> PLGraph:
@@ -137,11 +137,11 @@ def analyze_pl_graph(graph_json: str, intent: ParsedIntent) -> PLGraph:
 ```
 
 ```yaml
-# prompts/borusan/pl_graph.yaml
+# prompts/finance/pl_graph.yaml
 analyze:
   version: 2.1
   system: |
-    You are Borusan's CFO assistant.
+    You are a financial analysis assistant.
   user: |
     Analyze this P&L graph.
     Graph:   {{ graph_json }}
@@ -150,8 +150,8 @@ analyze:
   partials:
     - shared.time_filter        # reusable fragments
   examples:
-    - input:  {intent: "variance_analysis", segments: ["Automotive"]}
-      output: {relevant: ["auto_ebitda", "auto_revenue"]}
+    - input:  {intent: "variance_analysis", segments: ["Segment A"]}
+      output: {relevant: ["seg_ebitda", "seg_revenue"]}
 ```
 
 Prompt changes don't require code deploys. Non-technical domain experts can tune prompts directly. Full git versioning. A/B test by loading a different version.
@@ -276,13 +276,13 @@ Model providers become commodity compute — you declare what the output must sa
 
 ---
 
-## Reference Use Case — Borusan CFO Assist
+## Reference Use Case — CFO Assist
 
-The library was designed and validated against a real-world scenario: an AI assistant for a CFO that receives natural language financial analysis requests, walks a P&L graph to identify relevant data nodes, generates DAX queries for Azure Fabric, runs them in parallel, and consolidates the results into a structured financial report.
+The library was designed and validated against a real-world scenario: an AI assistant for a CFO that receives natural language financial analysis requests, walks a P&L graph to identify relevant data nodes, generates DAX queries against a data warehouse, runs them in parallel, and consolidates the results into a structured financial report.
 
 The flow demonstrates every primitive:
 - `@context` for intent parsing, P&L graph analysis, DAX generation, report building
-- `parallel()` for concurrent Azure Fabric queries
+- `parallel()` for concurrent data warehouse queries
 - Plain Python controllers for routing and retry logic
 - `escalate()` for low-confidence results and data failures
 - `ModelRegistry` auto-selection across quality tiers
@@ -329,7 +329,7 @@ export OPENAI_API_KEY=...
 
 `v0.1.0` — core primitives implemented and tested. Planned next:
 
-- [ ] Borusan CFO Assist reference implementation
+- [ ] CFO Assist reference implementation
 - [ ] Async `@context` and `@agent` variants  
 - [ ] `FederatedSelector` — ensemble model execution
 - [ ] Slack / Teams transport for `escalate()`

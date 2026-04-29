@@ -55,8 +55,8 @@ class PromptRegistry:
     File mapping: prompts/<module>/<submodule>.yaml  →  section key
 
     Example:
-        prompts.load("borusan.pl_graph.analyze")
-        reads   prompts/borusan/pl_graph.yaml  →  analyze:
+        prompts.load("finance.pl_graph.analyze")
+        reads   prompts/finance/pl_graph.yaml  →  analyze:
     """
 
     def __init__(self, root: str = "prompts/"):
@@ -71,7 +71,7 @@ class PromptRegistry:
             # "shared.time_filter" → shared/time_filter.yaml, section "time_filter"
             yaml_path = self.root / parts[0] / (parts[1] + ".yaml")
         else:
-            # "borusan.pl_graph.analyze" → prompts/borusan/pl_graph.yaml
+            # "finance.pl_graph.analyze" → prompts/finance/pl_graph.yaml
             rel_path  = Path(*parts[:-1]).with_suffix(".yaml")
             yaml_path = self.root / rel_path
 
