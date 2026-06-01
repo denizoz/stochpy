@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Company Research</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #202124;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      margin-top: 80px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: #1a73e8;
+    }
+
+    header p {
+      margin-top: 6px;
+      color: #5f6368;
+      font-size: 0.95rem;
+    }
+
+    /* ── Search bar ── */
+    .search-bar {
+      display: flex;
+      width: 100%;
+      max-width: 640px;
+      border: 1px solid #dfe1e5;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(32,33,36,.28);
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+
+    .search-bar:focus-within {
+      box-shadow: 0 1px 12px rgba(32,33,36,.4);
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 14px 20px;
+      font-size: 1rem;
+      border: none;
+      outline: none;
+      color: #202124;
+      background: transparent;
+    }
+
+    .search-bar button {
+      padding: 0 22px;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .search-bar button:hover:not(:disabled) { background: #1558c0; }
+    .search-bar button:disabled { background: #a8c7fa; cursor: not-allowed; }
+
+    /* ── Status / error ── */
+    #status {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: #5f6368;
+      min-height: 1.2em;
+    }
+
+    #error {
+      margin-top: 14px;
+      padding: 12px 18px;
+      background: #fce8e6;
+      border-radius: 8px;
+      color: #c5221f;
+      font-size: 0.9rem;
+      display: none;
+      max-width: 640px;
+      width: 100%;
+    }
+
+    /* ── Match cards ── */
+    #matches-wrapper {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #matches-wrapper h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #5f6368;
+      margin-bottom: 10px;
+    }
+
+    /* ── Pagination tabs ── */
+    #page-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .page-tab {
+      padding: 5px 13px;
+      border: 1px solid #dfe1e5;
+      border-radius: 20px;
+      background: #fff;
+      font-size: 0.85rem;
+      color: #5f6368;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+
+    .page-tab:hover { border-color: #1a73e8; color: #1a73e8; }
+
+    .page-tab.active {
+      background: #1a73e8;
+      border-color: #1a73e8;
+      color: #fff;
+    }
+
+    .match-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+
+    .match-card:hover {
+      border-color: #1a73e8;
+      box-shadow: 0 2px 8px rgba(26,115,232,.15);
+    }
+
+    .match-card .company-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #202124;
+    }
+
+    .match-card .tagline {
+      font-size: 0.88rem;
+      color: #5f6368;
+      margin-top: 3px;
+    }
+
+    .match-card .meta {
+      display: flex;
+      gap: 14px;
+      margin-top: 5px;
+    }
+
+    .match-card .location {
+      font-size: 0.78rem;
+      color: #5f6368;
+    }
+
+    .match-card .url {
+      font-size: 0.78rem;
+      color: #1a73e8;
+      word-break: break-all;
+    }
+
+    /* ── Selected company strip ── */
+    #selected-strip {
+      display: none;
+      width: 100%;
+      max-width: 760px;
+      margin-top: 20px;
+      padding: 12px 18px;
+      background: #e8f0fe;
+      border-radius: 10px;
+      border: 1px solid #c5d8fd;
+      font-size: 0.92rem;
+      color: #1a3c8f;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #selected-strip .selected-name { font-weight: 600; flex: 1; }
+    #selected-strip .selected-url  { font-size: 0.8rem; color: #4a6fa5; }
+
+    #back-btn {
+      background: none;
+      border: none;
+      color: #1a73e8;
+      cursor: pointer;
+      font-size: 0.88rem;
+      padding: 0;
+      white-space: nowrap;
+    }
+    #back-btn:hover { text-decoration: underline; }
+
+    /* ── Research result ── */
+    #result-wrapper {
+      width: 100%;
+      max-width: 760px;
+      margin: 24px 0 60px;
+      display: none;
+    }
+
+    #result-wrapper h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #5f6368;
+      margin-bottom: 10px;
+    }
+
+    #result {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 28px 32px;
+      font-size: 0.97rem;
+      line-height: 1.7;
+      overflow-y: auto;
+      max-height: 70vh;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+
+    #result h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-top: 20px;
+      margin-bottom: 6px;
+      color: #1a73e8;
+      border-bottom: 1px solid #e8eaed;
+      padding-bottom: 4px;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    #result h2:first-child { margin-top: 0; }
+    #result p  { margin-bottom: 10px; }
+    #result ul, #result ol { padding-left: 20px; margin-bottom: 10px; }
+    #result li { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Company Research</h1>
+  <p>Search for a company to generate a sales intelligence profile</p>
+</header>
+
+<div class="search-bar">
+  <input
+    id="query-input"
+    type="text"
+    placeholder="Search for a company… e.g. Stripe"
+    autocomplete="off"
+    spellcheck="false"
+  />
+  <button id="search-btn" onclick="runSearch()">Search</button>
+</div>
+
+<div id="status"></div>
+<div id="error"></div>
+
+<div id="matches-wrapper">
+  <h2>Select a company</h2>
+  <div id="page-tabs"></div>
+  <div id="matches"></div>
+</div>
+
+<div id="selected-strip">
+  <span class="selected-name" id="selected-name"></span>
+  <span class="selected-url"  id="selected-url"></span>
+  <button id="back-btn" onclick="resetToSearch()">← New search</button>
+</div>
+
+<div id="result-wrapper">
+  <h2>Sales Navigator Profile</h2>
+  <div id="result"></div>
+</div>
+
+<script>
+  const queryInput   = document.getElementById('query-input');
+  const searchBtn    = document.getElementById('search-btn');
+  const statusEl     = document.getElementById('status');
+  const errorEl      = document.getElementById('error');
+  const matchesWrap  = document.getElementById('matches-wrapper');
+  const pageTabsEl   = document.getElementById('page-tabs');
+  const matchesEl    = document.getElementById('matches');
+  const PAGE_SIZE    = 5;
+  let allMatches     = [];
+  let currentPage    = 0;
+  const selectedStrip = document.getElementById('selected-strip');
+  const selectedName = document.getElementById('selected-name');
+  const selectedUrl  = document.getElementById('selected-url');
+  const resultWrap   = document.getElementById('result-wrapper');
+  const resultEl     = document.getElementById('result');
+
+  queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
+  function setError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = msg ? 'block' : 'none';
+  }
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  function resetToSearch() {
+    matchesWrap.style.display   = 'none';
+    selectedStrip.style.display = 'none';
+    resultWrap.style.display    = 'none';
+    matchesEl.innerHTML         = '';
+    pageTabsEl.innerHTML        = '';
+    resultEl.innerHTML          = '';
+    allMatches  = [];
+    currentPage = 0;
+    setError('');
+    setStatus('');
+    queryInput.disabled = false;
+    searchBtn.disabled  = false;
+    queryInput.focus();
+  }
+
+  async function runSearch() {
+    const query = queryInput.value.trim();
+    if (!query) { queryInput.focus(); return; }
+
+    searchBtn.disabled  = true;
+    queryInput.disabled = true;
+    matchesWrap.style.display   = 'none';
+    selectedStrip.style.display = 'none';
+    resultWrap.style.display    = 'none';
+    setError('');
+    setStatus('Searching for companies…');
+
+    try {
+      const res = await fetch('/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (!data.matches || data.matches.length === 0) {
+        throw new Error('No companies found. Try a different search term.');
+      }
+
+      allMatches  = data.matches;
+      currentPage = 0;
+      renderPage(0);
+      setStatus('');
+    } catch (err) {
+      setError(err.message);
+      setStatus('');
+      searchBtn.disabled  = false;
+      queryInput.disabled = false;
+    }
+  }
+
+  function renderPage(page) {
+    const totalPages = Math.ceil(allMatches.length / PAGE_SIZE);
+
+    // tabs
+    pageTabsEl.innerHTML = '';
+    if (totalPages > 1) {
+      for (let i = 0; i < totalPages; i++) {
+        const tab = document.createElement('button');
+        tab.className = 'page-tab' + (i === page ? ' active' : '');
+        tab.textContent = i + 1;
+        tab.addEventListener('click', () => renderPage(i));
+        pageTabsEl.appendChild(tab);
+      }
+    }
+
+    // cards
+    const slice = allMatches.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+    matchesEl.innerHTML = '';
+    slice.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'match-card';
+      card.innerHTML = `
+        <div class="company-name">${escHtml(m.name)}</div>
+        <div class="tagline">${escHtml(m.tagline)}</div>
+        <div class="meta">
+          <span class="location">📍 ${escHtml(m.location)}</span>
+          <span class="url">${escHtml(m.linkedin_url)}</span>
+        </div>
+      `;
+      card.addEventListener('click', () => runResearch(m));
+      matchesEl.appendChild(card);
+    });
+
+    currentPage = page;
+    matchesWrap.style.display = 'block';
+  }
+
+  async function runResearch(match) {
+    matchesWrap.style.display = 'none';
+    resultWrap.style.display  = 'none';
+
+    selectedName.textContent = match.name;
+    selectedUrl.textContent  = match.linkedin_url;
+    selectedStrip.style.display = 'flex';
+
+    setError('');
+    setStatus('Researching company…');
+
+    try {
+      const res = await fetch('/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkedin_url: match.linkedin_url }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      resultEl.innerHTML = marked.parse(data.markdown);
+      resultWrap.style.display = 'block';
+      setStatus('');
+    } catch (err) {
+      setError(err.message);
+      setStatus('');
+    }
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+
+</body>
+</html>
